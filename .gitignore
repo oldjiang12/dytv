@@ -1,0 +1,34 @@
+# 敏感与本地状态（绝不进仓库）
+.env
+.env.*
+!.env.example
+server/user_data/
+apple-tv/Config/DYTV.local.xcconfig
+apple-tv/tools/renew.env
+scripts/privacy-patterns.local
+scripts/*.local.env
+
+# 证书与签名材料
+*.mobileprovision
+*.p12
+
+# Python
+server/.venv/
+__pycache__/
+*.pyc
+
+# Apple / Xcode
+.DS_Store
+xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# 调试产物
+*.log
+*.png
+!apple-tv/Assets.xcassets/**/*.png
+
+# 本机工具产物
+.mimosa/
+.video_agent/
+.brain-context.md

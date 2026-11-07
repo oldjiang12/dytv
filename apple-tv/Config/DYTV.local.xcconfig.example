@@ -1,0 +1,6 @@
+// 复制为 DYTV.local.xcconfig 后填写（该文件被 gitignore 忽略，不会提交）
+// Team ID 在 developer.apple.com → Membership 页面查看
+PRODUCT_BUNDLE_IDENTIFIER = com.yourname.dytv
+DEVELOPMENT_TEAM = TEAMID123
+// 默认服务器地址（host:port，不带 http://），可留空
+DYTV_DEFAULT_SERVER = 192.168.x.x:8055

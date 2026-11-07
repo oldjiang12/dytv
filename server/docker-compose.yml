@@ -1,0 +1,36 @@
+services:
+  dytv-api:
+    build: .
+    container_name: dytv-api
+    # Chromium 长时间播视频需要足够 /dev/shm；init 回收僵尸进程
+    shm_size: "1gb"
+    init: true
+    mem_limit: 2g
+    # 绕过宿主 mihomo fake-ip 的 DNS 劫持（否则 douyinvod 解析到 198.18.x.x，
+    # SSRF 防护按设计拒绝一切代理）——不放宽防护，只修 DNS 路径
+    dns:
+      - 223.5.5.5
+      - 119.29.29.29
+    environment:
+      TZ: Asia/Shanghai
+      PW_VERSION: "1.49.1"
+      # NAS 的 mihomo fake-ip 把白名单域名解析到 198.18.x.x，开启后对该段
+      # （仅限已过域名白名单的目标）按代理 TUN 接管放行；其余 SSRF 校验不变
+      ALLOW_FAKE_IP: "1"
+      # 建议设置：开启后 /login 需带 ?token=xxx 才能访问
+      # ADMIN_TOKEN: "换成一串随机字符"
+      # 翻页异常（页面因视频加载失败停住）时改为 "0"，代价是 NAS 多耗带宽
+      # BLOCK_MEDIA: "1"
+    ports:
+      - "8055:8055"
+    volumes:
+      # 只挂登录态目录；不要把 ./ 挂到 /app（会覆盖镜像内代码）
+      - ./user_data:/app/user_data
+    restart: unless-stopped
+    healthcheck:
+      # 镜像里不一定有 curl，用 python
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8055/healthz',timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s

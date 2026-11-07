@@ -1,0 +1,8 @@
+// DYTV.xcconfig — 公开默认值（进仓库）。个人值写在 DYTV.local.xcconfig（已被 gitignore 忽略）
+// 注意：xcconfig 里 // 是注释符号；#include? 必须放最后一行（后面的赋值覆盖前面的）
+// DYTVDefaultServer 只写 host:port，不要带 http://；留空则 App 首次启动进入设置页
+DYTV_DEFAULT_SERVER =
+PRODUCT_BUNDLE_IDENTIFIER = com.example.dytv
+DEVELOPMENT_TEAM =
+CODE_SIGN_STYLE = Automatic
+#include? "DYTV.local.xcconfig"
