@@ -205,6 +205,25 @@ cmd_doctor() {
   if [ -n "$pid" ]; then
     code="$(curl -s -o /dev/null -m 3 -w '%{http_code}' "http://127.0.0.1:$port/healthz" || true)"
     note "端口 $port 已被 PID $pid 占用，/healthz 返回 HTTP ${code:-超时}"
+    if v="$(cd "$SERVER" && "$VPY" -c "import json,time,urllib.request
+try:
+    d=json.load(urllib.request.urlopen('http://127.0.0.1:$port/status',timeout=8))
+    age=(time.time()-d['last_harvest_at'])/3600 if d['last_harvest_at'] else -1
+    print('%s %s' % (round(age,1), d['harvester_state']))
+except Exception as e:
+    print('fail', e)" 2>/dev/null)"; then
+      case "$v" in
+        fail*) chk bad "无法读取 /status" ;;
+        "-1 "*) note "服务刚启动，还没有截到内容" ;;
+        *)  age="${v% *}"; hst="${v#* }"
+            # BSD awk 不支持 print (比较式)，用退出码判断 age < 2
+            if echo "$age" | awk '{exit !($1+0 < 2)}'; then
+              chk ok "内容新鲜：${age}h 前有产出（${hst}）"
+            else
+              chk bad "已 ${age}h 无新内容（${hst}）——很可能卡在僵尸页面，跑 ./scripts/mac.sh service restart"
+            fi ;;
+      esac
+    fi
   else note "端口 $port 空闲"; fi
   if [ -n "${ADMIN_TOKEN:-}" ]; then chk ok "已设置 ADMIN_TOKEN"; else note "没有设置 ADMIN_TOKEN，/login 对局域网开放"; fi
   ip="$(lan_ip)"; note "局域网地址：${ip:-未检测到}，以及 $(local_host)"

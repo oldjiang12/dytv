@@ -478,6 +478,10 @@ class Harvester:
         self.harvested_total = 0
         self.parse_errors = 0
         self._no_gain = 0           # 连续无新增（响应有但 0 新条目）
+        self._fill_stall = 0        # 连续「补流未达标走完 reload」的轮数。
+        # 修 2026-11-07 故障：重建上下文后页面若成僵尸（不再发任何 aweme XHR），
+        # _no_gain 永不增长（它只在 _on_response 里计数），升级链卡死在 reload 级。
+        # _fill_stall 覆盖「无响应」失败模式：reload 空转 10 轮（约 6 分钟）强制重建。
         self._last_reload = time.time()
         self._was_logged_in: Optional[bool] = None
         self._filler_task: Optional[asyncio.Task] = None
@@ -649,6 +653,7 @@ class Harvester:
                 schedule_warm(it)
         if added:
             self._no_gain = 0
+            self._fill_stall = 0
             self.harvested_total += added
             self.last_harvest_at = time.time()
             log.info("截胡 +%d，待分发队列 %d", added, self.store.pending_count)
@@ -703,6 +708,14 @@ class Harvester:
             await self._relaunch()
             return
         if self.login_active:
+            return
+        # reload 空转升级：连续 10 轮补流走到底仍无产出（含页面不发 XHR 的僵尸态）
+        # → 强制重建上下文；重建失败不清零计数，下一轮会再次尝试
+        self._fill_stall += 1
+        if self._fill_stall >= 10:
+            self._fill_stall = 0
+            log.warning("补流连续 %d 轮无产出，升级重建浏览器上下文", 10)
+            await self._relaunch()
             return
         log.info("补流未达标，reload 主页")
         async with self.lock:

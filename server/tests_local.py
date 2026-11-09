@@ -367,5 +367,10 @@ check("无 token 行不受影响", _r2.args[0] == "no token here")
 _src_log = _re.search(r"class _RedactToken", _src) if _src else None
 check("filter 挂在 uvicorn.access", "uvicorn.access" in _src)
 
+print("== 修复回归：reload 空转必须能升级到重建（2026-11-07 39h 僵尸故障） ==")
+check("filler 空转升级存在（_fill_stall >= 10 -> _relaunch）",
+      "_fill_stall" in _src and "_fill_stall >= 10" in _src and "_relaunch" in _src)
+check("产出会清零空转计数", _src.count("self._fill_stall = 0") >= 1)
+
 print(f"\n结果: PASS={PASS} FAIL={FAIL} SKIP={SKIP}")
 sys.exit(1 if FAIL else 0)
